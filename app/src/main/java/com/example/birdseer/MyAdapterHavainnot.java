@@ -12,102 +12,107 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.ArrayList;
-//Tämä luokka tekee recyclerviewiin sisällön
+import java.util.Collections;
+
 public class MyAdapterHavainnot extends RecyclerView.Adapter<MyAdapterHavainnot.MyViewHolder> {
 
     private Context context;
-    private ArrayList<String> lajiNimiArraytList, sijaintiArrayList;
-    private ArrayList<Integer> idArrayList, dayArrayList, monthArraylist, yearArrayList;
-    private ArrayList<Boolean> painettu;
-    private ImageView poistaLaji;
+    private ArrayList<String> lajiNimiArrayList, sijaintiArrayList;
+    private ArrayList<Integer> idArrayList, dayArrayList, monthArrayList, yearArrayList;
+    private ArrayList<Boolean> poistaLajiVisibilityList;
 
 
-    int position;
-            //konstruktorille annetaan arraylistit joissa tietokannan data
     public MyAdapterHavainnot(Context context,
-                              ArrayList<String> lajiNimiArraytList,
+                              ArrayList<String> lajiNimiArrayList,
                               ArrayList<String> sijaintiArrayList,
                               ArrayList<Integer> idArrayList,
                               ArrayList<Integer> dayArrayList,
-                              ArrayList<Integer> monthArraylist,
+                              ArrayList<Integer> monthArrayList,
                               ArrayList<Integer> yearArrayList) {
-
         this.context = context;
-        this.lajiNimiArraytList = lajiNimiArraytList;
+        this.lajiNimiArrayList = lajiNimiArrayList;
         this.sijaintiArrayList = sijaintiArrayList;
         this.idArrayList = idArrayList;
         this.dayArrayList = dayArrayList;
-        this.monthArraylist = monthArraylist;
+        this.monthArrayList = monthArrayList;
         this.yearArrayList = yearArrayList;
+        poistaLajiVisibilityList = new ArrayList<>(Collections.nCopies(idArrayList.size(), false));
 
     }
 
+
     @NonNull
-    @Override //luodaan recylcerviewin näkymä.
+    @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View view = inflater.inflate(R.layout.my_row_havainnot, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.my_row_havainnot, parent, false);
         return new MyViewHolder(view);
     }
 
-    @Override //tiedot jotka näytetään recyclerview:n listan itemissä. Tiedot saadaan arraylisteistä
+    @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, @SuppressLint("RecyclerView") int position) {
-        //holder.havaintoID_txt.setText(String.valueOf(idArrayList.get(position)));
-        holder.havaittuLaji_txt.setText(String.valueOf(lajiNimiArraytList.get(position)));
-        holder.paiva_txt.setText(String.valueOf(dayArrayList.get(position)));
-        holder.kuukausi_txt.setText(String.valueOf(monthArraylist.get(position)));
-        holder.vuosi_txt.setText(String.valueOf(yearArrayList.get(position)));
-        holder.sijainti_txt.setText(String.valueOf(sijaintiArrayList.get(position)));
-        holder.mainLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        holder.bind(position);
 
-                if (holder.poistaLaji.getVisibility() == View.INVISIBLE){
-                    holder.poistaLaji.setVisibility(View.VISIBLE);
+        // Set the visibility of the poistaLaji button based on the visibility state
+        if (poistaLajiVisibilityList.get(position)) {
+            holder.poistaLaji.setVisibility(View.VISIBLE);
+        } else {
+            holder.poistaLaji.setVisibility(View.INVISIBLE);
+        }
 
-                }else {
-                    holder.poistaLaji.setVisibility(View.INVISIBLE);
-
-                }
-
-            }
+        holder.mainLayout.setOnClickListener(v -> {
+            // Update the visibility state and notify data changes
+            poistaLajiVisibilityList.set(position, !poistaLajiVisibilityList.get(position));
+            notifyDataSetChanged();
         });
 
-        //Tämä katsoo, jos roskakorin kuvaa painetaan niin siirrytään poisto pop-up näkymään
-        holder.poistaLaji.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                havainnonPoistoDialogi(position);
-
-            }
-        });
-
-
+        holder.poistaLaji.setOnClickListener(v -> havainnonPoistoDialogi(position));
     }
 
-    private int currentPosition() {
-        return this.currentPosition();
+
+    @Override
+    public int getItemCount() {
+        return idArrayList.size();
+    }
+
+    public class MyViewHolder extends RecyclerView.ViewHolder {
+
+        TextView havaittuLaji_txt, paiva_txt, kuukausi_txt, vuosi_txt, sijainti_txt;
+        ImageView poistaLaji;
+        LinearLayout mainLayout;
+
+        public MyViewHolder(@NonNull View itemView) {
+            super(itemView);
+            havaittuLaji_txt = itemView.findViewById(R.id.havaittuLaji_txt);
+            paiva_txt = itemView.findViewById(R.id.paiva_txt);
+            kuukausi_txt = itemView.findViewById(R.id.Kuukausi_txt);
+            vuosi_txt = itemView.findViewById(R.id.vuosi_txt);
+            sijainti_txt = itemView.findViewById(R.id.sijainti_txt);
+            poistaLaji = itemView.findViewById(R.id.roskakori);
+            mainLayout = itemView.findViewById(R.id.mainLayout);
+            poistaLaji.setVisibility(View.INVISIBLE);
+
+            poistaLaji.setOnClickListener(v -> havainnonPoistoDialogi(getAdapterPosition()));
+        }
+
+        public void bind(int position) {
+            havaittuLaji_txt.setText(String.valueOf(lajiNimiArrayList.get(position)));
+            paiva_txt.setText(String.valueOf(dayArrayList.get(position)));
+            kuukausi_txt.setText(String.valueOf(monthArrayList.get(position)));
+            vuosi_txt.setText(String.valueOf(yearArrayList.get(position)));
+            sijainti_txt.setText(String.valueOf(sijaintiArrayList.get(position)));
+        }
     }
 
     private void havainnonPoistoDialogi(int position) {
-
-        //Tässä kohdassa tulee pop-up näkymä, kun painaa roskakoria. Pop-up näkymä
-        //kysyy käyttäjältä, että haluaako hän poistaa, vai ei. Jos poistetaan, tieto
-        //poistuu SQL tietokannasta sekä ArrayListeistä, ja uusi listaus päivitetään
-        //Jos ei poisteta, mitään ei tapahdu.
-
-        String lajinimi = String.valueOf(lajiNimiArraytList.get(position));
+        String lajinimi = String.valueOf(lajiNimiArrayList.get(position));
         String sijainti = String.valueOf(sijaintiArrayList.get(position));
         int vuosi = yearArrayList.get(position);
-        int kuukausi = monthArraylist.get(position);
+        int kuukausi = monthArrayList.get(position);
         int paiva = dayArrayList.get(position);
-        int id =idArrayList.get(position);
+        int id = idArrayList.get(position);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setCancelable(true);
@@ -120,71 +125,35 @@ public class MyAdapterHavainnot extends RecyclerView.Adapter<MyAdapterHavainnot.
                 " " + sijainti +
                 "?" + "</b>";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            builder.setMessage(Html.fromHtml (viesti, Html.FROM_HTML_MODE_COMPACT));
+            builder.setMessage(Html.fromHtml(viesti, Html.FROM_HTML_MODE_COMPACT));
         } else {
-            builder.setMessage(Html.fromHtml (viesti));
+            builder.setMessage(Html.fromHtml(viesti));
         }
         builder.setPositiveButton("Poista",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-
-                        //Hyväksytään poisto
                         MyDatabaseHelper myDB = new MyDatabaseHelper(context);
                         myDB.poistaHavainto(id);
 
-                        lajiNimiArraytList.remove(position);
+                        lajiNimiArrayList.remove(position);
                         sijaintiArrayList.remove(position);
                         idArrayList.remove(position);
                         dayArrayList.remove(position);
-                        monthArraylist.remove(position);
+                        monthArrayList.remove(position);
                         yearArrayList.remove(position);
                         notifyItemRemoved(position);
                         notifyItemRangeChanged(position, getItemCount());
-
-
                     }
                 });
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-
-                //Tämä on peruuta-kohta
-
+                // This is the cancel action
             }
         });
 
         AlertDialog dialog = builder.create();
         dialog.show();
-    }
-
-    @Override //Palauttaa arraylistin pituuden, jonka perusteella luodaan recyclerview:n rivien määrä.
-    public int getItemCount() {
-        return idArrayList.size();
-    }
-
-    public class MyViewHolder extends RecyclerView.ViewHolder {
-
-        TextView havaittuLaji_txt, paiva_txt, kuukausi_txt, vuosi_txt, sijainti_txt;
-        ImageView poistaLaji;
-        LinearLayout mainLayout;
-
-
-
-        public MyViewHolder(@NonNull View itemView) {
-            super(itemView);
-            //havaintoID_txt = itemView.findViewById(R.id.havaintoID_txt);
-            havaittuLaji_txt = itemView.findViewById(R.id.havaittuLaji_txt);
-            paiva_txt = itemView.findViewById(R.id.paiva_txt);
-            kuukausi_txt = itemView.findViewById(R.id.Kuukausi_txt);
-            vuosi_txt = itemView.findViewById(R.id.vuosi_txt);
-            sijainti_txt = itemView.findViewById(R.id.sijainti_txt);
-            poistaLaji = itemView.findViewById(R.id.roskakori);
-            mainLayout = itemView.findViewById(R.id.mainLayout);
-            poistaLaji.setVisibility(View.INVISIBLE);
-
-
-
-        }
     }
 }
